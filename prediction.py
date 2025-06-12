@@ -1,101 +1,21 @@
-# import tkinter as tk
-# from tkinter import ttk, messagebox
-# from tkinter import font
-# import yfinance as yf
-# import pandas as pd
-# import numpy as np
-# from datetime import datetime, timedelta
-# from sklearn.model_selection import train_test_split
-# from sklearn.ensemble import RandomForestRegressor
-# from sklearn.metrics import mean_squared_error, accuracy_score
-# from sklearn.preprocessing import StandardScaler
-# import matplotlib.pyplot as plt
-# from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-# import seaborn as sns
-# import threading
-# import time
-# import warnings
-# warnings.filterwarnings('ignore')  # Clean up sklearn warnings
-
-
-# # Use these simple functions instead:
-# def calculate_moving_average(data, window):
-#     return data.rolling(window=window).mean()
-
-# def calculate_rsi(data, window=14):
-#     delta = data.diff()
-#     gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-#     loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-#     rs = gain / loss
-#     rsi = 100 - (100 / (1 + rs))
-#     return rsi
-
-# def calculate_bollinger_bands(data, window=20):
-#     rolling_mean = data.rolling(window=window).mean()
-#     rolling_std = data.rolling(window=window).std()
-#     upper_band = rolling_mean + (rolling_std * 2)
-#     lower_band = rolling_mean - (rolling_std * 2)
-#     return upper_band, lower_band
-
-
-
-
-
-
-# screen.mainloop()
-
-
-
-
-
-
-
-
-
-'''''''''''''''''''''''''''
-
-'''''''''''''''''''''''''''
-
-
-import yfinance as yf
 import pandas as pd
 import numpy as np
+import yfinance as yf
 from datetime import datetime, timedelta
-from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error, r2_score
-import matplotlib.pyplot as plt
-from pytrends.request import TrendReq
-import requests
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
 
-pytrends = TrendReq(hl='en-US', tz=360)
-# Define the stock symbol
-# STOCK_SYMBOL = "NVDA"  # Nvidia's ticker symbol
-STOCK_SYMBOL = "NFLX"  # Nvidia's ticker symbol
-
-print("Starting Nvidia stock data collection...")
-# Download 2 years of historical data
+STOCK_SYMBOL = "NFLX"
 end_date = datetime.now()
-start_date = end_date - timedelta(days=730)  # About 2 years
+start_date = end_date - timedelta(days=180)
 
-print(f"Downloading {STOCK_SYMBOL} data from {start_date.date()} to {end_date.date()}")
-
-# Download the data
 stock_data = yf.download(STOCK_SYMBOL, start=start_date, end=end_date)
+stock_data.dropna(inplace=True)
 
-print(f"Downloaded {len(stock_data)} days of data")
-print("\nFirst 5 rows:")
-print(stock_data.head())
-print("\nLast 5 rows:")
-print(stock_data.tail())
+daily_percentage_change = (stock_data["Close"] - stock_data["Open"]) / stock_data["Open"] * 100
 
-model = LinearRegression()
-
-print("HELLO WORLD")
-
-
-
-daily_percentage_change = (stock_data.Close - stock_data.Open)/stock_data.Open *100
 conditions = [
     daily_percentage_change < -3,
     (daily_percentage_change >= -3) & (daily_percentage_change <= -1),
@@ -104,27 +24,31 @@ conditions = [
     daily_percentage_change > 3
 ]
 values = [0, 1, 2, 3, 4]
-daily_percentage_classified = np.select(conditions, values, default=-1)
-print("*******Daily_Percentage*******")
-# print(daily_percentage_classified)
-kw_list = [
-    "Netflix stock",      # Direct investment-related
-    "NFLX",               # Stock ticker
-    "Netflix earnings",   # Earnings reports drive big moves
-    "Netflix cancel",     # People canceling subscriptions (bearish signal)
-    "Netflix new shows"   # Signals buzz and engagement (bullish sentiment)
-]
+daily_percentage_classified = np.select(conditions, values, default=2)  
+
+print("******* Daily Percentage Classified *******")
+print(daily_percentage_classified[:5])
+
+df = pd.read_csv("netflix_stock_trends.csv")
+
+min_len = min(len(df), len(daily_percentage_classified))
+x_input = df.iloc[:min_len].values
+y_data = daily_percentage_classified[:min_len]
+
+print("x_input shape:", x_input.shape)
+print("y_data shape:", y_data.shape)
+print("Unique classes:", np.unique(y_data))
 
 
+scaler = StandardScaler()
+x_scaled = scaler.fit_transform(x_input)
 
-pytrends = TrendReq(hl='en-US', tz=360)
+x_train, x_test, y_train, y_test = train_test_split(x_scaled, y_data, test_size=0.3, random_state=42)
+
+model = RandomForestClassifier(n_estimators=300, random_state=42)
+model.fit(x_train, y_train)
 
 
-pytrends=TrendReq(h1='en-US',tz=360)
-timeframe_str = f"{start_date.strftime('%2023-%06-%13')} {end_date.strftime('%2025-%06-%12')}" # change every day
-pytrends.build_payload(kw_list, cat=0, timeframe=timeframe_str, geo='', gprop='')
-
-
-
-iot = pytrends.interest_over_time()
-iot.plot()
+y_pred = model.predict(x_test)
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
