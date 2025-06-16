@@ -2,4 +2,4 @@
 
 
 
-every single day need to fetch from  google api into the csv file
+every single day need to fetch trends from google trends into the csv file
