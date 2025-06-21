@@ -23,7 +23,7 @@ try:
     data = pytrends.interest_over_time()
 
     if not data.empty:
-        print("✅ Successfully fetched data for the last 24 hours.")
+        print("Successfully fetched data for the last 24 hours.")
         print(data.head())
 
         # Plot
@@ -38,13 +38,13 @@ try:
                  "Netflix earnings": data["Netflix earnings"].tolist(),
                  "Netflix cancel": data["Netflix cancel"].tolist(),
                  "Netflix new shows": data["Netflix new shows"].tolist()}
-        print("📊 Data ready for further analysis or model training.")
+        print("Data ready for further analysis or model training.")
         df = pd.DataFrame(data)
         df.to_csv("netflix_stock_trends.csv", index=False)
     else:
-        print("⚠️ No data returned.")
+        print("No data returned.")
 except Exception as e:
-    print("❌ Error occurred:")
+    print("Error occurred:")
     print(e)
 
 
